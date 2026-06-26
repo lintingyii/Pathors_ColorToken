@@ -1,7 +1,7 @@
 {
   "app": "tokenbench",
   "version": 1,
-  "exportedAt": "2026-06-26T04:12:41.779Z",
+  "exportedAt": "2026-06-26T06:53:10.352Z",
   "saved": [],
   "current": {
     "fileName": "Mode 1.tokens.json",
@@ -131,7 +131,7 @@
       "accent": "#EEF9FF",
       "muted": "#F5F5F5",
       "muted-foreground": "#727272",
-      "destructive": "__red__",
+      "destructive": "#E5484D",
       "border": "#E6E6E6",
       "input": "#F5F5F5",
       "ring": "#1469D4",
