@@ -17,7 +17,7 @@
   --muted-foreground: oklch(0.552 0 0); /* #727272 */
   --accent: oklch(0.976 0.014 231.2); /* #EEF9FF */
   --accent-foreground: oklch(0.218 0 0); /* #1A1A1A */
-  --destructive: oklch(0.577 0.215 27.3); /* #DC2626 */
+  --destructive: oklch(0.626 0.193 23.0); /* #E5484D */
   --destructive-foreground: oklch(1.000 0 0); /* #FFFFFF */
   --border: oklch(0.925 0 0); /* #E6E6E6 */
   --input: oklch(0.970 0 0); /* #F5F5F5 */
