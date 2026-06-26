@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Figma → shadcn Token Bench</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#15171c; --ink-2:#3a3f4a; --muted:#6b7280; --faint:#9aa1ad;
+    --canvas:#f5f6f8; --panel:#ffffff; --line:#e4e7ec; --line-2:#eef0f3;
+    --tool:#5b4ad6;            /* 工具自身的強調色,刻意非藍,避免與品牌藍混淆 */
+    --tool-soft:#efecfb;
+    --code-bg:#16181d; --code-ink:#e8eaf0;
+    --ok:#138a5a;
+    --r:10px;
+    --ui:"Inter","Noto Sans TC",system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{
+    font-family:var(--ui); color:var(--ink); background:var(--canvas);
+    -webkit-font-smoothing:antialiased; font-size:14px; line-height:1.5;
+  }
+  .app{display:flex; flex-direction:column; height:100vh; min-height:0;}
+
+  /* ── header ── */
+  header{
+    display:flex; align-items:center; gap:18px;
+    padding:14px 22px; background:var(--panel); border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .brandmark{display:flex; align-items:baseline; gap:10px;}
+  .brandmark h1{
+    font-size:15px; font-weight:700; letter-spacing:-.01em; margin:0;
+  }
+  .brandmark .tag{
+    font-family:var(--mono); font-size:11px; color:var(--tool);
+    background:var(--tool-soft); padding:2px 7px; border-radius:5px; font-weight:600;
+  }
+  header .sub{font-size:12.5px; color:var(--muted); margin-left:2px;}
+  header .spacer{flex:1;}
+  .ghost-btn{
+    font-family:var(--ui); font-size:12.5px; font-weight:500; color:var(--ink-2);
+    background:transparent; border:1px solid var(--line); padding:7px 13px;
+    border-radius:8px; cursor:pointer; transition:.15s;
+  }
+  .ghost-btn:hover{background:var(--canvas); border-color:#d2d6dd;}
+
+  /* ── body grid ── */
+  .grid{display:grid; grid-template-columns:380px 1fr; flex:1; min-height:0;}
+  @media(max-width:880px){ .grid{grid-template-columns:1fr; overflow:auto;} }
+
+  .col{min-height:0; display:flex; flex-direction:column;}
+  .col.left{border-right:1px solid var(--line); background:var(--panel);}
+  .col-scroll{overflow-y:auto; padding:18px; min-height:0;}
+  @media(max-width:880px){ .col-scroll{overflow:visible;} .col.left{border-right:none; border-bottom:1px solid var(--line);} }
+
+  /* ── dropzone ── */
+  .drop{
+    border:1.5px dashed #cdd2da; border-radius:12px; padding:22px 16px;
+    text-align:center; cursor:pointer; transition:.15s; background:var(--canvas);
+  }
+  .drop:hover,.drop.over{border-color:var(--tool); background:var(--tool-soft);}
+  .drop .ic{font-size:22px; opacity:.5;}
+  .drop .t{font-weight:600; margin-top:6px; font-size:13px;}
+  .drop .h{font-size:11.5px; color:var(--muted); margin-top:3px;}
+  .drop .ex{
+    margin-top:10px; font-family:var(--mono); font-size:11px; color:var(--tool);
+    text-decoration:underline; cursor:pointer;
+  }
+  .loaded{
+    display:none; align-items:center; gap:10px; padding:10px 12px; margin-top:4px;
+    background:var(--canvas); border:1px solid var(--line); border-radius:9px;
+    font-size:12.5px;
+  }
+  .loaded .dot{width:7px; height:7px; border-radius:50%; background:var(--ok);}
+  .loaded b{font-weight:600;} .loaded .x{margin-left:auto; color:var(--faint); cursor:pointer;}
+
+  /* ── controls ── */
+  .ctl-section{margin-top:20px;}
+  .ctl-head{
+    font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.04em;
+    text-transform:uppercase; color:var(--faint); margin:0 0 9px; display:flex; align-items:center; gap:8px;
+  }
+  .ctl-head::after{content:""; flex:1; height:1px; background:var(--line-2);}
+
+  .radius-row{display:flex; align-items:center; gap:12px; margin-bottom:4px;}
+  .radius-row input[type=range]{flex:1; accent-color:var(--tool);}
+  .radius-row .val{font-family:var(--mono); font-size:12px; width:62px; text-align:right; color:var(--ink-2);}
+
+  .map-row{
+    display:grid; grid-template-columns:20px 1fr; gap:10px; align-items:center;
+    padding:7px 0; border-bottom:1px solid var(--line-2);
+  }
+  .map-row.sub{padding-left:10px;}
+  .sw{width:18px; height:18px; border-radius:5px; border:1px solid rgba(0,0,0,.12); flex-shrink:0;}
+  .map-meta{min-width:0;}
+  .map-name{font-family:var(--mono); font-size:12px; font-weight:600; color:var(--ink);}
+  .map-name.fg{font-weight:500; color:var(--ink-2);}
+  .map-hint{font-size:11px; color:var(--faint); margin-top:1px;}
+  .map-row select{
+    grid-column:2; font-family:var(--mono); font-size:11.5px; color:var(--ink-2);
+    width:100%; padding:5px 7px; border:1px solid var(--line); border-radius:7px;
+    background:#fff; margin-top:4px; cursor:pointer; max-width:100%;
+  }
+  .map-row select:focus{outline:2px solid var(--tool-soft); border-color:var(--tool);}
+  .map-ok{grid-column:2; font-family:var(--mono); font-size:10.5px; color:var(--faint); margin-top:3px;}
+
+  /* ── right column tabs ── */
+  .tabs{display:flex; gap:4px; padding:12px 18px 0; background:var(--canvas); flex-shrink:0; align-items:center;}
+  .tab{
+    font-size:13px; font-weight:500; color:var(--muted); background:transparent;
+    border:none; padding:8px 14px; border-radius:8px 8px 0 0; cursor:pointer; font-family:var(--ui);
+  }
+  .tab.active{color:var(--ink); background:var(--panel); font-weight:600; box-shadow:0 -1px 0 var(--line) inset, 1px 0 0 var(--line), -1px 0 0 var(--line);}
+  .tabs .spacer{flex:1;}
+  .mini-btn{
+    font-family:var(--ui); font-size:12px; font-weight:500; color:#fff; background:var(--tool);
+    border:none; padding:7px 13px; border-radius:8px; cursor:pointer; transition:.15s;
+  }
+  .mini-btn:hover{filter:brightness(1.08);}
+  .mini-btn.sec{background:transparent; color:var(--ink-2); border:1px solid var(--line);}
+  .mini-btn.sec:hover{background:var(--panel);}
+
+  .pane{flex:1; min-height:0; overflow-y:auto; background:var(--panel); padding:24px;}
+  .pane.hidden{display:none;}
+
+  .empty{
+    height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    color:var(--faint); text-align:center; gap:8px;
+  }
+  .empty .big{font-size:30px; opacity:.4;}
+
+  /* ── code pane ── */
+  .codewrap{background:var(--code-bg); border-radius:12px; overflow:hidden;}
+  .codewrap pre{
+    margin:0; padding:18px 20px; overflow:auto; max-height:none;
+    font-family:var(--mono); font-size:12px; line-height:1.65; color:var(--code-ink);
+    white-space:pre; tab-size:2;
+  }
+  .cm{color:#7f8794;} .cv{color:#9bd1ff;} .cc{color:#c8a4ff;} .cp{color:#e8eaf0;}
+  .cval{color:#a6e3a1;}
+
+  .code-hint{font-size:11.5px; color:var(--muted); margin-bottom:10px; padding-left:2px;}
+  #codeEditor{
+    font-family:var(--mono); font-size:12px; line-height:1.9; color:var(--code-ink);
+    padding:16px 18px; overflow:auto;
+  }
+  .cline{white-space:pre; display:block;}
+  .cline.ind{padding-left:18px; display:flex; align-items:center;}
+  .cline.edit .cv{margin-left:8px;}
+  input.cswatch{
+    -webkit-appearance:none; appearance:none; width:15px; height:15px;
+    border:1px solid #3a3f4a; border-radius:4px; padding:0; background:none; cursor:pointer;
+    vertical-align:middle; flex-shrink:0;
+  }
+  input.cswatch::-webkit-color-swatch-wrapper{padding:0;}
+  input.cswatch::-webkit-color-swatch{border:none; border-radius:3px;}
+  input.cswatch:hover{box-shadow:0 0 0 2px rgba(91,74,214,.45);}
+  .theme-det{margin-top:10px; border-top:1px solid #2a2e36; padding-top:8px;}
+  .theme-det summary{cursor:pointer; color:#9aa1ad; font-size:11.5px; user-select:none;}
+  .theme-det summary:hover{color:#c8cdd6;}
+  .theme-det pre{margin:0; padding:10px 0 0; font-size:11.5px; line-height:1.6; white-space:pre; overflow:auto;}
+
+  /* ── saved themes ── */
+  .store-head{display:flex; align-items:center; gap:8px; margin-bottom:9px;}
+  .chip-btn{
+    font-family:var(--ui); font-size:11.5px; font-weight:500; color:#fff; background:var(--tool);
+    border:none; padding:5px 10px; border-radius:7px; cursor:pointer; transition:.15s; white-space:nowrap;
+  }
+  .chip-btn:hover{filter:brightness(1.08);}
+  .chip-btn.sec{background:transparent; color:var(--ink-2); border:1px solid var(--line);}
+  .chip-btn.sec:hover{background:var(--canvas);}
+  #storeNotice{font-size:11px; color:#9a6a00; background:#fff7e6; border:1px solid #ffe2a8;
+    border-radius:7px; padding:7px 9px; margin-bottom:8px; display:none;}
+  .saved-empty{font-size:11.5px; color:var(--faint); padding:6px 0 2px;}
+  .saved-item{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line-2);}
+  .saved-item .sw-row{display:flex; gap:2px; flex-shrink:0;}
+  .saved-item .sw-row span{width:11px; height:16px; border-radius:2px; border:1px solid rgba(0,0,0,.08);}
+  .saved-item .meta{min-width:0; flex:1;}
+  .saved-item .nm{font-size:12.5px; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .saved-item .tm{font-family:var(--mono); font-size:10px; color:var(--faint);}
+  .saved-item .act{display:flex; gap:4px;}
+  .icn-btn{font-size:11.5px; color:var(--muted); background:transparent; border:1px solid var(--line);
+    border-radius:6px; padding:4px 8px; cursor:pointer;}
+  .icn-btn:hover{background:var(--canvas); color:var(--ink);}
+  .icn-btn.del:hover{color:#c0392b; border-color:#f0c0b8;}
+  .store-actions{display:flex; gap:8px; margin-top:12px;}
+  .store-actions .chip-btn{flex:1;}
+  .sync-box{margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);}
+  .sync-title{font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--faint);}
+  .sync-help{font-size:11px; color:var(--muted); margin:6px 0 9px; line-height:1.5;}
+  .sync-input{width:100%; font-family:var(--mono); font-size:11.5px; color:var(--ink-2);
+    border:1px solid var(--line); border-radius:7px; padding:7px 9px; outline:none; background:#fff;}
+  .sync-input:focus{border-color:var(--tool); box-shadow:0 0 0 3px var(--tool-soft);}
+  .sync-check{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink-2); margin-top:10px; cursor:pointer;}
+  .sync-check input{accent-color:var(--tool); width:14px; height:14px;}
+  .sync-status{font-size:11px; margin-top:8px; min-height:14px;}
+  .sync-status.ok{color:var(--ok);} .sync-status.err{color:#c0392b;}
+  .gh-det{margin-top:14px; border-top:1px dashed var(--line); padding-top:12px;}
+  .gh-det summary{cursor:pointer; font-size:11.5px; font-weight:600; color:var(--tool); user-select:none;}
+  .gh-det summary:hover{filter:brightness(1.1);}
+  .gh-grid{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:9px;}
+  .gh-warn{font-size:10.5px; line-height:1.55; color:#9a6a00; background:#fff7e6; border:1px solid #ffe2a8;
+    border-radius:7px; padding:7px 9px; margin:9px 0 0;}
+
+  /* =========================================================
+     PREVIEW — scoped; uses generated CSS vars on #previewRoot
+     ========================================================= */
+  #previewRoot{ color:var(--foreground); }
+  #previewRoot .pv-canvas{
+    background:var(--background); border:1px solid var(--border);
+    border-radius:16px; padding:26px; display:flex; flex-direction:column; gap:24px;
+  }
+  #previewRoot .pv-sec-label{
+    font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.04em;
+    text-transform:uppercase; color:var(--muted-foreground); margin-bottom:12px;
+  }
+  #previewRoot .row{display:flex; flex-wrap:wrap; gap:10px; align-items:center;}
+
+  #previewRoot .btn{
+    font-family:var(--ui); font-size:13.5px; font-weight:500; line-height:1;
+    padding:10px 16px; border-radius:calc(var(--radius) - 2px); border:1px solid transparent;
+    cursor:pointer; transition:.15s;
+  }
+  #previewRoot .btn-primary{background:var(--primary); color:var(--primary-foreground);}
+  #previewRoot .btn-primary:hover{filter:brightness(1.06);}
+  #previewRoot .btn-secondary{background:var(--secondary); color:var(--secondary-foreground);}
+  #previewRoot .btn-destructive{background:var(--destructive); color:var(--destructive-foreground);}
+  #previewRoot .btn-outline{background:transparent; color:var(--foreground); border-color:var(--border);}
+  #previewRoot .btn-outline:hover{background:var(--accent); color:var(--accent-foreground);}
+  #previewRoot .btn-ghost{background:transparent; color:var(--foreground);}
+  #previewRoot .btn-ghost:hover{background:var(--accent); color:var(--accent-foreground);}
+
+  #previewRoot .card{
+    background:var(--card); color:var(--card-foreground);
+    border:1px solid var(--border); border-radius:var(--radius);
+    padding:20px; max-width:340px; box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  #previewRoot .card h3{margin:0; font-size:16px; font-weight:600;}
+  #previewRoot .card .desc{font-size:13px; color:var(--muted-foreground); margin:4px 0 16px;}
+  #previewRoot .card .body{font-size:13.5px; margin-bottom:18px;}
+  #previewRoot .card .foot{display:flex; gap:8px;}
+
+  #previewRoot label.fld{display:block; font-size:12.5px; font-weight:500; margin-bottom:6px;}
+  #previewRoot .input{
+    width:100%; font-family:var(--ui); font-size:13.5px; color:var(--foreground);
+    background:var(--background); border:1px solid var(--input); border-radius:calc(var(--radius) - 2px);
+    padding:9px 12px; transition:.15s;
+  }
+  #previewRoot .input::placeholder{color:var(--muted-foreground);}
+  #previewRoot .input:focus{outline:2px solid var(--ring); outline-offset:1px; border-color:var(--ring);}
+  #previewRoot .help{font-size:11.5px; color:var(--muted-foreground); margin-top:5px;}
+
+  #previewRoot .badge{
+    font-family:var(--ui); font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:999px;
+    display:inline-flex; align-items:center;
+  }
+  #previewRoot .badge-default{background:var(--primary); color:var(--primary-foreground);}
+  #previewRoot .badge-secondary{background:var(--secondary); color:var(--secondary-foreground);}
+  #previewRoot .badge-destructive{background:var(--destructive); color:var(--destructive-foreground);}
+  #previewRoot .badge-outline{background:transparent; color:var(--foreground); border:1px solid var(--border);}
+
+  #previewRoot .alert{
+    background:var(--muted); border:1px solid var(--border); border-radius:var(--radius);
+    padding:13px 15px; max-width:420px;
+  }
+  #previewRoot .alert .at{font-size:13px; font-weight:600; margin-bottom:2px;}
+  #previewRoot .alert .ad{font-size:12.5px; color:var(--muted-foreground);}
+
+  #previewRoot .swtch{
+    width:40px; height:23px; border-radius:999px; background:var(--primary);
+    position:relative; cursor:pointer; flex-shrink:0;
+  }
+  #previewRoot .swtch.off{background:var(--input);}
+  #previewRoot .swtch i{
+    position:absolute; top:2.5px; left:2.5px; width:18px; height:18px; border-radius:50%;
+    background:var(--background); transition:.18s;
+  }
+  #previewRoot .swtch.on i{left:19.5px;}
+
+  #previewRoot .charts{display:flex; align-items:flex-end; gap:10px; height:90px;}
+  #previewRoot .charts .bar{width:38px; border-radius:6px 6px 2px 2px;}
+  #previewRoot .chips{display:flex; flex-wrap:wrap; gap:8px;}
+  #previewRoot .chip{
+    display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:11px;
+    background:var(--card); border:1px solid var(--border); border-radius:8px; padding:5px 9px; color:var(--card-foreground);
+  }
+  #previewRoot .chip .sq{width:14px; height:14px; border-radius:4px; border:1px solid rgba(0,0,0,.12);}
+
+  /* expanded components */
+  #previewRoot .btn-link{background:transparent; color:var(--primary); text-decoration:underline; padding-left:6px; padding-right:6px;}
+  #previewRoot .btn-sm{padding:7px 12px; font-size:12.5px;}
+  #previewRoot .btn-lg{padding:12px 22px; font-size:14.5px;}
+  #previewRoot .btn-icon{padding:0; width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; font-size:18px;}
+
+  #previewRoot .pv-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(248px,1fr)); gap:16px; align-items:start;
+  }
+  #previewRoot .pv-card{
+    background:var(--card); color:var(--card-foreground);
+    border:1px solid var(--border); border-radius:var(--radius);
+    padding:18px; box-shadow:0 1px 2px rgba(0,0,0,.04);
+  }
+  #previewRoot .pv-card h3{margin:0; font-size:15px; font-weight:600;}
+  #previewRoot .pv-card .desc{font-size:12.5px; color:var(--muted-foreground); margin:3px 0 14px;}
+
+  #previewRoot .pv-tabs{display:flex; gap:3px; background:var(--muted); padding:3px; border-radius:calc(var(--radius) - 2px); margin-bottom:14px;}
+  #previewRoot .pv-tab{flex:1; text-align:center; font-size:12.5px; font-weight:500; padding:6px; border-radius:calc(var(--radius) - 4px); cursor:pointer; color:var(--muted-foreground);}
+  #previewRoot .pv-tab.active{background:var(--background); color:var(--foreground); box-shadow:0 1px 2px rgba(0,0,0,.06);}
+
+  #previewRoot .check{display:flex; align-items:center; gap:8px; font-size:12.5px; cursor:pointer;}
+  #previewRoot .radio{display:flex; align-items:center; gap:7px; font-size:12.5px; cursor:pointer;}
+  #previewRoot .rgroup{display:flex; gap:16px;}
+  #previewRoot input[type=checkbox], #previewRoot input[type=radio]{accent-color:var(--primary); width:15px; height:15px; cursor:pointer;}
+
+  #previewRoot .select{
+    font-family:var(--ui); font-size:12.5px; color:var(--foreground); background:var(--background);
+    border:1px solid var(--input); border-radius:calc(var(--radius) - 2px); padding:6px 8px; cursor:pointer;
+  }
+  #previewRoot .select.sm{font-size:11.5px; padding:4px 6px;}
+  #previewRoot .select:focus{outline:2px solid var(--ring); outline-offset:1px;}
+
+  #previewRoot .tlist{display:flex; flex-direction:column; gap:12px;}
+  #previewRoot .titem{display:flex; align-items:center; gap:10px;}
+  #previewRoot .avatar{width:32px; height:32px; border-radius:50%; flex-shrink:0; color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center;}
+  #previewRoot .ti-meta{flex:1; min-width:0;}
+  #previewRoot .ti-n{font-size:13px; font-weight:500;}
+  #previewRoot .ti-e{font-size:11.5px; color:var(--muted-foreground);}
+
+  #previewRoot .swrow{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 0; border-top:1px solid var(--border);}
+  #previewRoot .swrow:first-of-type{border-top:none;}
+  #previewRoot .sw-t{font-size:13px; font-weight:500;}
+  #previewRoot .sw-d{font-size:11.5px; color:var(--muted-foreground);}
+
+  #previewRoot .stat-row{display:flex; align-items:center; gap:10px;}
+  #previewRoot .stat{font-size:26px; font-weight:700; letter-spacing:-.02em;}
+  #previewRoot .charts.mini{height:54px; gap:7px; margin-top:14px;}
+  #previewRoot .charts.mini .bar{width:100%;}
+
+  #previewRoot .prog-label{display:flex; justify-content:space-between; font-size:12.5px; font-weight:500; margin-bottom:7px;}
+  #previewRoot .prog-label span{color:var(--muted-foreground);}
+  #previewRoot .progress{height:8px; background:var(--muted); border-radius:999px; overflow:hidden;}
+  #previewRoot .progress i{display:block; height:100%; background:var(--primary); border-radius:999px;}
+  #previewRoot input[type=range].slider{width:100%; accent-color:var(--primary); cursor:pointer;}
+
+  #previewRoot .cal-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:2px;}
+  #previewRoot .cal-dow span{text-align:center; font-size:10.5px; color:var(--muted-foreground); padding:3px 0;}
+  #previewRoot .cal-cell{text-align:center; font-size:12px; padding:5px 0; border-radius:7px; cursor:pointer;}
+  #previewRoot .cal-cell:hover{background:var(--accent); color:var(--accent-foreground);}
+  #previewRoot .cal-cell.dim{color:var(--muted-foreground); opacity:.45;}
+  #previewRoot .cal-cell.sel{background:var(--primary); color:var(--primary-foreground); font-weight:600;}
+
+  #previewRoot .ttable{width:100%; border-collapse:collapse; font-size:12.5px;}
+  #previewRoot .ttable th{text-align:left; font-weight:500; color:var(--muted-foreground); font-size:11.5px; padding:0 0 8px; border-bottom:1px solid var(--border);}
+  #previewRoot .ttable td{padding:9px 0; border-bottom:1px solid var(--border);}
+  #previewRoot .ttable tr:last-child td{border-bottom:none;}
+
+  #previewRoot .acc{border-bottom:1px solid var(--border);}
+  #previewRoot .acc summary{font-size:13px; font-weight:500; padding:11px 0; cursor:pointer; list-style:none; display:flex; justify-content:space-between;}
+  #previewRoot .acc summary::-webkit-details-marker{display:none;}
+  #previewRoot .acc summary::after{content:"⌄"; color:var(--muted-foreground);}
+  #previewRoot .acc[open] summary::after{content:"⌃";}
+  #previewRoot .acc-b{font-size:12.5px; color:var(--muted-foreground); padding:0 0 12px;}
+
+  #previewRoot .alert-destructive{border-color:var(--destructive);}
+  #previewRoot .alert-destructive .at{color:var(--destructive);}
+
+  .toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--ink); color:#fff; font-size:12.5px; font-weight:500;
+    padding:9px 16px; border-radius:9px; opacity:0; pointer-events:none; transition:.25s;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  /* text fallback modal */
+  .ov{position:fixed; inset:0; background:rgba(20,22,27,.55); display:none; align-items:center; justify-content:center; z-index:50; padding:24px;}
+  .ov-box{background:var(--panel); border-radius:14px; width:min(680px,100%); max-height:82vh; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.3);}
+  .ov-head{display:flex; align-items:center; gap:12px; padding:14px 16px; border-bottom:1px solid var(--line);}
+  .ov-head b{font-size:14px;}
+  .ov-hint{font-size:11.5px; color:var(--muted); flex:1; min-width:0;}
+  .ov-x{cursor:pointer; color:var(--faint); font-size:15px;}
+  .ov-x:hover{color:var(--ink);}
+  #ovText{flex:1; min-height:300px; resize:none; border:none; outline:none; padding:16px;
+    font-family:var(--mono); font-size:12px; line-height:1.6; color:var(--code-ink); background:var(--code-bg); white-space:pre;}
+  .ov-foot{display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--line);}
+  .nm-input{width:100%; font-family:var(--ui); font-size:14px; color:var(--ink); background:var(--canvas);
+    border:1px solid var(--line); border-radius:8px; padding:10px 12px; outline:none;}
+  .nm-input:focus{border-color:var(--tool); box-shadow:0 0 0 3px var(--tool-soft);}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brandmark">
+      <h1>Token Bench</h1>
+      <span class="tag">Figma → shadcn</span>
+    </div>
+    <span class="sub">上傳 Variables JSON,自動轉 OKLCH 並對映語意 token</span>
+    <span class="spacer"></span>
+    <button class="ghost-btn" id="resetBtn">重設對映</button>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: controls -->
+    <div class="col left">
+      <div class="col-scroll">
+        <div class="drop" id="drop">
+          <div class="ic">⬆</div>
+          <div class="t">拖入 / 點擊上傳 tokens.json</div>
+          <div class="h">支援 Figma Variables 匯出(DTCG 格式)</div>
+          <div class="ex" id="loadSample">或載入範例色票</div>
+        </div>
+        <div class="loaded" id="loaded">
+          <span class="dot"></span>
+          <span><b id="fileName">tokens.json</b> · <span id="colorCount">0</span> 個顏色</span>
+          <span class="x" id="clearFile">✕</span>
+        </div>
+
+        <div class="ctl-section" id="savedSection">
+          <div class="store-head">
+            <p class="ctl-head" style="margin:0;flex:1;">存檔記錄</p>
+            <button class="chip-btn" id="saveNow">＋ 儲存目前</button>
+          </div>
+          <div id="storeNotice"></div>
+          <div id="savedList"></div>
+          <div class="store-actions">
+            <button class="chip-btn sec" id="exportStore">⤓ 匯出存檔</button>
+            <button class="chip-btn sec" id="importStore">⤒ 匯入存檔</button>
+          </div>
+
+          <div class="sync-box">
+            <div class="sync-title">雲端同步(選用)</div>
+            <p class="sync-help">把備份 JSON 放到兩台電腦都能讀的網址(建議 GitHub Gist 的 raw 連結),即可跨機器同步紀錄。</p>
+            <input id="syncUrl" class="sync-input" type="url" placeholder="https://.../tokenbench-backup.json" spellcheck="false">
+            <div class="store-actions" style="margin-top:8px;">
+              <button class="chip-btn" id="syncPull">↻ 從網址載入</button>
+            </div>
+            <label class="sync-check"><input type="checkbox" id="syncAuto"> <span>開啟時自動同步</span></label>
+            <div id="syncStatus" class="sync-status"></div>
+
+            <details class="gh-det">
+              <summary>GitHub repo 聯動(進階 · 可推送)</summary>
+              <div class="gh-grid">
+                <input id="ghOwner" class="sync-input" placeholder="帳號 owner" spellcheck="false">
+                <input id="ghRepo" class="sync-input" placeholder="repo 名稱" spellcheck="false">
+              </div>
+              <div class="gh-grid" style="margin-top:6px;">
+                <input id="ghPath" class="sync-input" placeholder="紀錄路徑 tokenbench-backup.json" spellcheck="false">
+                <input id="ghBranch" class="sync-input" placeholder="分支 main" spellcheck="false">
+              </div>
+              <input id="ghCssPath" class="sync-input" placeholder="CSS 路徑 globals.css" spellcheck="false" style="margin-top:6px;">
+              <input id="ghToken" class="sync-input" type="password" placeholder="Personal access token(推送 / 私有 repo 需要)" spellcheck="false" style="margin-top:6px;" autocomplete="off">
+              <p class="gh-warn">⚠ token 只會存在這台電腦的瀏覽器,不會寫進這個 HTML 檔。請用 fine-grained token、權限僅限這個 repo 的 Contents 讀寫。共用 / 公用電腦請勿勾選記住。</p>
+              <label class="sync-check"><input type="checkbox" id="ghRemember"> <span>在這台電腦記住 token</span></label>
+              <div class="store-actions" style="margin-top:8px;">
+                <button class="chip-btn sec" id="ghPull">↻ 載入紀錄</button>
+                <button class="chip-btn sec" id="ghPush">⤴ 推送紀錄</button>
+              </div>
+              <div class="store-actions" style="margin-top:6px;">
+                <button class="chip-btn" id="ghPushCss" style="flex:1;">⤴ 推送 globals.css 到 repo(給工程團隊)</button>
+              </div>
+              <div id="ghStatus" class="sync-status"></div>
+            </details>
+          </div>
+        </div>
+
+        <div id="controls" style="display:none;">
+          <div class="ctl-section">
+            <p class="ctl-head">圓角 Radius</p>
+            <div class="radius-row">
+              <input type="range" id="radius" min="0" max="20" step="1" value="10">
+              <span class="val" id="radiusVal">0.625rem</span>
+            </div>
+          </div>
+          <div id="mapping"></div>
+          <div class="ctl-section">
+            <p class="ctl-head">品牌擴充 token</p>
+            <p style="font-size:11.5px;color:var(--muted);margin:0;">
+              所有上傳的顏色都會額外輸出成 <span style="font-family:var(--mono)">--brand-*</span> 變數,
+              可用 <span style="font-family:var(--mono)">bg-brand-*</span> 取用,不影響上方語意對映。
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: preview / code -->
+    <div class="col">
+      <div class="tabs">
+        <button class="tab active" data-pane="preview">元件預覽</button>
+        <button class="tab" data-pane="code">globals.css</button>
+        <span class="spacer"></span>
+        <button class="mini-btn sec" id="copyBtn">複製</button>
+        <button class="mini-btn sec" id="txtBtn">純文字</button>
+        <button class="mini-btn" id="dlBtn">下載 .css</button>
+      </div>
+
+      <div class="pane" id="pane-preview">
+        <div class="empty" id="previewEmpty">
+          <div class="big">◔</div>
+          <div>上傳色票後,這裡會用你的顏色即時渲染元件</div>
+        </div>
+        <div id="previewRoot" style="display:none;">
+          <div class="pv-canvas">
+
+            <div>
+              <div class="pv-sec-label">Buttons</div>
+              <div class="row">
+                <button class="btn btn-primary">Primary</button>
+                <button class="btn btn-secondary">Secondary</button>
+                <button class="btn btn-destructive">Delete</button>
+                <button class="btn btn-outline">Outline</button>
+                <button class="btn btn-ghost">Ghost</button>
+                <button class="btn btn-link">Link</button>
+              </div>
+              <div class="row" style="margin-top:10px;">
+                <button class="btn btn-primary btn-sm">Small</button>
+                <button class="btn btn-primary">Default</button>
+                <button class="btn btn-primary btn-lg">Large</button>
+                <button class="btn btn-primary btn-icon">＋</button>
+                <button class="btn btn-primary" disabled style="opacity:.5;cursor:not-allowed;">Disabled</button>
+              </div>
+            </div>
+
+            <div class="pv-grid">
+
+              <div class="pv-card">
+                <h3>建立帳號</h3>
+                <div class="desc">輸入資料以開始試用 Pathors。</div>
+                <div class="pv-tabs" data-tabs>
+                  <div class="pv-tab active" data-tab="0">電子郵件</div>
+                  <div class="pv-tab" data-tab="1">SSO</div>
+                </div>
+                <div class="pv-panel" data-panel="0">
+                  <label class="fld">電子郵件</label>
+                  <input class="input" placeholder="you@company.com">
+                  <label class="fld" style="margin-top:12px;">密碼</label>
+                  <input class="input" type="password" value="········">
+                  <label class="check" style="margin-top:14px;">
+                    <input type="checkbox" checked> <span>我同意服務條款</span>
+                  </label>
+                  <button class="btn btn-primary" style="width:100%;margin-top:16px;">建立帳號</button>
+                </div>
+                <div class="pv-panel" data-panel="1" hidden>
+                  <div class="body" style="margin:6px 0 14px;">使用公司的單一登入系統繼續。</div>
+                  <button class="btn btn-outline" style="width:100%;">以 Google 繼續</button>
+                  <button class="btn btn-outline" style="width:100%;margin-top:8px;">以 Microsoft 繼續</button>
+                </div>
+              </div>
+
+              <div class="pv-card">
+                <h3>團隊成員</h3>
+                <div class="desc">管理你的工作區成員與權限。</div>
+                <div class="tlist">
+                  <div class="titem">
+                    <span class="avatar" style="background:var(--chart-1)">CH</span>
+                    <div class="ti-meta"><div class="ti-n">陳怡君</div><div class="ti-e">yj@pathors.com</div></div>
+                    <select class="select sm"><option>擁有者</option><option>編輯</option><option>檢視</option></select>
+                  </div>
+                  <div class="titem">
+                    <span class="avatar" style="background:var(--chart-2)">LI</span>
+                    <div class="ti-meta"><div class="ti-n">林家豪</div><div class="ti-e">jh@pathors.com</div></div>
+                    <select class="select sm"><option>編輯</option><option>擁有者</option><option>檢視</option></select>
+                  </div>
+                  <div class="titem">
+                    <span class="avatar" style="background:var(--chart-4)">WA</span>
+                    <div class="ti-meta"><div class="ti-n">王思婷</div><div class="ti-e">st@pathors.com</div></div>
+                    <select class="select sm"><option>檢視</option><option>編輯</option><option>擁有者</option></select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pv-card">
+                <h3>通知設定</h3>
+                <div class="desc">選擇你想收到的提醒。</div>
+                <div class="swrow"><div><div class="sw-t">通話摘要</div><div class="sw-d">每通結束後寄送</div></div><div class="swtch on"><i></i></div></div>
+                <div class="swrow"><div><div class="sw-t">每週報表</div><div class="sw-d">每週一上午寄送</div></div><div class="swtch on"><i></i></div></div>
+                <div class="swrow"><div><div class="sw-t">行銷訊息</div><div class="sw-d">產品更新與優惠</div></div><div class="swtch off"><i></i></div></div>
+              </div>
+
+              <div class="pv-card">
+                <h3>本月通話量</h3>
+                <div class="stat-row">
+                  <div class="stat">12,840</div>
+                  <span class="badge badge-default">+12.5%</span>
+                </div>
+                <div class="desc" style="margin-top:2px;">相較上月 11,420 通</div>
+                <div class="charts mini" id="pvCharts"></div>
+              </div>
+
+              <div class="pv-card">
+                <h3>進度與調整</h3>
+                <div class="prog-label">月度目標 <span>72%</span></div>
+                <div class="progress"><i style="width:72%"></i></div>
+                <div class="prog-label" style="margin-top:16px;">語速</div>
+                <input type="range" class="slider" min="0" max="100" value="60">
+                <div class="rgroup" style="margin-top:14px;">
+                  <label class="radio"><input type="radio" name="plan" checked><span>標準語音</span></label>
+                  <label class="radio"><input type="radio" name="plan"><span>擬真語音</span></label>
+                </div>
+              </div>
+
+              <div class="pv-card">
+                <h3>六月</h3>
+                <div class="cal">
+                  <div class="cal-grid cal-dow"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+                  <div class="cal-grid" id="pvCal"></div>
+                </div>
+              </div>
+
+              <div class="pv-card">
+                <h3>近期通話</h3>
+                <table class="ttable">
+                  <thead><tr><th>對象</th><th>狀態</th><th style="text-align:right;">時長</th></tr></thead>
+                  <tbody>
+                    <tr><td>客服 #2301</td><td><span class="badge badge-default">完成</span></td><td style="text-align:right;">2:14</td></tr>
+                    <tr><td>客服 #2302</td><td><span class="badge badge-secondary">轉接</span></td><td style="text-align:right;">0:48</td></tr>
+                    <tr><td>客服 #2303</td><td><span class="badge badge-destructive">中斷</span></td><td style="text-align:right;">0:12</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="pv-card">
+                <h3>常見問題</h3>
+                <details class="acc" open><summary>支援哪些語言?</summary><div class="acc-b">繁體中文、英文,以及其他多種語言。</div></details>
+                <details class="acc"><summary>可以串接現有系統嗎?</summary><div class="acc-b">可透過 API 與 Webhook 整合。</div></details>
+                <details class="acc"><summary>如何計費?</summary><div class="acc-b">依實際通話分鐘數計費。</div></details>
+              </div>
+
+            </div>
+
+            <div>
+              <div class="pv-sec-label">Badges</div>
+              <div class="row">
+                <span class="badge badge-default">Default</span>
+                <span class="badge badge-secondary">Secondary</span>
+                <span class="badge badge-destructive">Destructive</span>
+                <span class="badge badge-outline">Outline</span>
+              </div>
+            </div>
+
+            <div class="row" style="align-items:stretch; gap:14px;">
+              <div class="alert" style="flex:1;">
+                <div class="at">已儲存變更</div>
+                <div class="ad">你的主題設定已套用到所有元件。</div>
+              </div>
+              <div class="alert alert-destructive" style="flex:1;">
+                <div class="at">連線失敗</div>
+                <div class="ad">無法連到語音伺服器,請稍後再試。</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="pv-sec-label">Brand tokens</div>
+              <div class="chips" id="pvChips"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pane hidden" id="pane-code">
+        <div class="empty" id="codeEmpty">
+          <div class="big">{ }</div>
+          <div>上傳色票後,這裡會生成可貼上的 globals.css</div>
+        </div>
+        <div id="codeWrap" style="display:none;">
+          <div class="code-hint">點任一色塊即可直接改色,OKLCH 值會自動重算並同步到預覽。token 名稱不可改。</div>
+          <div class="codewrap"><div id="codeEditor"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast">已複製</div>
+
+<script>
+/* ===================== 色彩轉換 ===================== */
+function srgbToLinear(c){ return c <= 0.04045 ? c/12.92 : Math.pow((c+0.055)/1.055, 2.4); }
+function hexToRgb(hex){
+  hex = hex.replace('#','').trim();
+  if(hex.length===3) hex = hex.split('').map(x=>x+x).join('');
+  return [parseInt(hex.slice(0,2),16)/255, parseInt(hex.slice(2,4),16)/255, parseInt(hex.slice(4,6),16)/255];
+}
+function rgbToHex(r,g,b){
+  const f=v=>Math.max(0,Math.min(255,Math.round(v*255))).toString(16).padStart(2,'0');
+  return '#'+f(r)+f(g)+f(b);
+}
+function hexToOklch(hex){
+  let [r,g,b] = hexToRgb(hex).map(srgbToLinear);
+  const l=0.4122214708*r+0.5363325363*g+0.0514459929*b;
+  const m=0.2119034982*r+0.6806995451*g+0.1073969566*b;
+  const s=0.0883024619*r+0.2817188376*g+0.6299787005*b;
+  const l_=Math.cbrt(l), m_=Math.cbrt(m), s_=Math.cbrt(s);
+  const L=0.2104542553*l_+0.7936177850*m_-0.0040720468*s_;
+  const A=1.9779984951*l_-2.4285922050*m_+0.4505937099*s_;
+  const B=0.0259040371*l_+0.7827717662*m_-0.8086757660*s_;
+  const C=Math.sqrt(A*A+B*B);
+  let H=Math.atan2(B,A)*180/Math.PI; if(H<0)H+=360;
+  return {L,C,H};
+}
+function oklchStr(hex){
+  const {L,C,H}=hexToOklch(hex);
+  if(C<0.002) return `oklch(${L.toFixed(3)} 0 0)`;
+  return `oklch(${L.toFixed(3)} ${C.toFixed(3)} ${H.toFixed(1)})`;
+}
+function luminance(hex){
+  const [r,g,b]=hexToRgb(hex).map(srgbToLinear);
+  return 0.2126*r+0.7152*g+0.0722*b;
+}
+function chroma(hex){ return hexToOklch(hex).C; }
+function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,''); }
+
+/* ===================== 解析 Figma JSON ===================== */
+function extractHex(val){
+  if(typeof val==='string'){
+    const s=val.trim();
+    return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(s) ? s : null; // 別名 {a.b} 暫不解析
+  }
+  if(val && typeof val==='object'){
+    if(typeof val.hex==='string') return val.hex;
+    if(Array.isArray(val.components) && val.components.length>=3){
+      return rgbToHex(val.components[0],val.components[1],val.components[2]);
+    }
+  }
+  return null;
+}
+function flatten(obj, prefix, out){
+  for(const k in obj){
+    if(k.startsWith('$')) continue;
+    const v = obj[k];
+    if(v && typeof v==='object'){
+      if((v.$type==='color' || v.type==='color' || v.$value!==undefined || v.value!==undefined) &&
+         (v.$value!==undefined || v.value!==undefined)){
+        const hex = extractHex(v.$value!==undefined?v.$value:v.value);
+        if(hex){ out.push({path: prefix?prefix+'/'+k:k, key:k, hex:hex.toUpperCase()}); continue; }
+      }
+      flatten(v, prefix?prefix+'/'+k:k, out);
+    }
+  }
+  return out;
+}
+
+/* ===================== 狀態 ===================== */
+let COLORS=[];          // [{path,key,hex,lum,C}]
+let MAP={};             // slot -> hex | '__auto__' | '__red__'
+let RADIUS=10;          // px
+let BRAND_OVERRIDES={}; // slug(path) -> hex(手動改色)
+let CURRENT_CSS='';     // 供複製 / 下載
+
+const ORDER=['background','foreground','card','card-foreground','popover','popover-foreground',
+  'primary','primary-foreground','secondary','secondary-foreground','muted','muted-foreground',
+  'accent','accent-foreground','destructive','destructive-foreground','border','input','ring',
+  'chart-1','chart-2','chart-3','chart-4','chart-5'];
+
+function brandHex(c){ return BRAND_OVERRIDES[slug(c.path)] || c.hex; }
+
+const SLOTS=[
+  {group:'介面表面'},
+  {v:'background', hint:'頁面底色'},
+  {v:'foreground', hint:'頁面文字', fg:true, base:'background'},
+  {v:'card', hint:'卡片底'},
+  {v:'card-foreground', hint:'卡片文字', fg:true, base:'card'},
+  {v:'popover', hint:'浮層底'},
+  {v:'popover-foreground', hint:'浮層文字', fg:true, base:'popover'},
+  {group:'品牌'},
+  {v:'primary', hint:'主行動色'},
+  {v:'primary-foreground', hint:'主色上文字', fg:true, base:'primary'},
+  {v:'secondary', hint:'次要'},
+  {v:'secondary-foreground', hint:'次要上文字', fg:true, base:'secondary'},
+  {v:'accent', hint:'hover 高亮'},
+  {v:'accent-foreground', hint:'accent 上文字', fg:true, base:'accent'},
+  {group:'狀態 / 輔助'},
+  {v:'muted', hint:'柔和底'},
+  {v:'muted-foreground', hint:'次要文字', fg:true, base:'muted', midgray:true},
+  {v:'destructive', hint:'危險 / 刪除', red:true},
+  {v:'destructive-foreground', hint:'危險上文字', fg:true, base:'destructive'},
+  {group:'結構'},
+  {v:'border', hint:'邊框'},
+  {v:'input', hint:'輸入框框線'},
+  {v:'ring', hint:'焦點環'},
+  {group:'圖表'},
+  {v:'chart-1'},{v:'chart-2'},{v:'chart-3'},{v:'chart-4'},{v:'chart-5'},
+];
+
+/* ===================== 自動對映 ===================== */
+function find(re){ return COLORS.find(c=>re.test(c.path)||re.test(c.key)); }
+function findAll(re){ return COLORS.filter(c=>re.test(c.path)||re.test(c.key)); }
+function grays(){ return COLORS.filter(c=>c.C<0.04).sort((a,b)=>a.lum-b.lum); }
+function darkestHex(){ const g=grays(); const pool=g.length?g:[...COLORS].sort((a,b)=>a.lum-b.lum); return pool[0]?pool[0].hex:'#1A1A1A'; }
+function lightestHex(){ const s=[...COLORS].sort((a,b)=>b.lum-a.lum); return s[0]?s[0].hex:'#FFFFFF'; }
+function midGrayHex(){
+  const g=grays(); if(!g.length) return '#767676';
+  return g.reduce((best,c)=>Math.abs(c.lum-0.22)<Math.abs(best.lum-0.22)?c:best, g[0]).hex; // 視覺中灰
+}
+
+function autoMap(){
+  const m={};
+  const white = find(/(^|[^a-z])white([^a-z]|$)/i) || COLORS.find(c=>c.hex==='#FFFFFF');
+  const neutral = find(/neutral|background|^bg/i);
+  const primary = find(/primary.*(normal|default|base|main|500|600)/i) || find(/primary(?!.*(light|dark))/i) || find(/primary/i)
+                  || [...COLORS].filter(c=>c.C>0.05).sort((a,b)=>b.C-a.C)[0];
+  const skyLight = find(/(sky|primary).*light/i);
+  const skyDark  = find(/(sky|primary).*dark/i);
+
+  m.background = (neutral||white||{hex:lightestHex()}).hex;
+  m.card = (white||{hex:'#FFFFFF'}).hex;
+  m.popover = m.card;
+  m.primary = primary?primary.hex:'#1469D4';
+  m.secondary = (skyLight || find(/secondary/i) || {hex:'#F5F5F5'}).hex;
+  // accent 避免和 background 撞色:背景已是 neutral 時,改用另一個淺色品牌色
+  let accent = skyLight || find(/accent/i) || neutral;
+  if(accent && accent.hex===m.background){ accent = (find(/(sky|primary).*light/i) || {hex:m.secondary}); }
+  m.accent = (accent||{hex:m.secondary}).hex;
+  m.muted = (grays().filter(g=>g.lum>0.7).slice(-1)[0] || {hex:'#F5F5F5'}).hex;
+  m['muted-foreground']= midGrayHex();
+  m.destructive = (find(/destructive|danger|error|^red/i) || {hex:'__red__'}).hex || '__red__';
+  if(!find(/destructive|danger|error|^red/i)) m.destructive='__red__';
+  const bd = grays().find(g=>g.lum>0.55 && g.lum<0.9) || {hex:'#D6D6D6'};
+  m.border = bd.hex; m.input = bd.hex;
+  m.ring = m.primary;
+
+  // foregrounds -> auto
+  ['foreground','card-foreground','popover-foreground','primary-foreground',
+   'secondary-foreground','accent-foreground','destructive-foreground'].forEach(s=>m[s]='__auto__');
+
+  // charts:挑出色相分散、彩度高的顏色
+  const sat=[...COLORS].filter(c=>c.C>0.05).sort((a,b)=>b.C-a.C);
+  const pick=[];
+  const order=[primary, find(/sky.*normal/i)||find(/sky/i), find(/yellow/i), find(/pink|green/i), skyDark];
+  order.forEach(c=>{ if(c && !pick.includes(c.hex)) pick.push(c.hex); });
+  sat.forEach(c=>{ if(pick.length<5 && !pick.includes(c.hex)) pick.push(c.hex); });
+  while(pick.length<5) pick.push((primary||{hex:'#1469D4'}).hex);
+  for(let i=0;i<5;i++) m['chart-'+(i+1)]=pick[i];
+
+  return m;
+}
+
+/* ===================== 解析 hex(處理特殊值) ===================== */
+function resolveHex(slot){
+  const val=MAP[slot];
+  if(val==='__red__') return '#DC2626';
+  if(val==='__auto__'){
+    const meta=SLOTS.find(s=>s.v===slot);
+    const baseHex=resolveHex(meta && meta.base ? meta.base : 'background');
+    return luminance(baseHex)>0.45 ? darkestHex() : '#FFFFFF';
+  }
+  return val;
+}
+
+/* ===================== 生成 CSS ===================== */
+function radiusRem(){ return (RADIUS/16).toFixed(3).replace(/0+$/,'').replace(/\.$/,'')+'rem'; }
+
+function buildCSS(){
+  const L=[];
+  L.push('/* 品牌主題 — shadcn/ui (Tailwind v4, OKLCH) */');
+  L.push('/* 由 Token Bench 自 Figma Variables 生成 · 僅含淺色模式 */');
+  L.push('');
+  L.push(':root {');
+  L.push(`  --radius: ${radiusRem()};`);
+  const order=ORDER;
+  order.forEach(s=>{
+    const hex=resolveHex(s);
+    L.push(`  --${s}: ${oklchStr(hex)}; /* ${hex} */`);
+  });
+  L.push('');
+  L.push('  /* 品牌擴充 token */');
+  COLORS.forEach(c=>{ const h=brandHex(c); L.push(`  --brand-${slug(c.path)}: ${oklchStr(h)}; /* ${h} */`); });
+  L.push('}');
+  L.push('');
+  L.push('@theme inline {');
+  order.forEach(s=> L.push(`  --color-${s}: var(--${s});`));
+  COLORS.forEach(c=> L.push(`  --color-brand-${slug(c.path)}: var(--brand-${slug(c.path)});`));
+  L.push('  --radius-sm: calc(var(--radius) - 4px);');
+  L.push('  --radius-md: calc(var(--radius) - 2px);');
+  L.push('  --radius-lg: var(--radius);');
+  L.push('  --radius-xl: calc(var(--radius) + 4px);');
+  L.push('}');
+  return L.join('\n');
+}
+
+function highlightCSS(css){
+  return css.split('\n').map(line=>{
+    const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;');
+    let m;
+    if((m=line.match(/^(\s*)(--[\w-]+):\s*(.+?);(\s*\/\*.*\*\/)?$/))){
+      return esc(m[1])+'<span class="cv">'+esc(m[2])+'</span>: <span class="cp">'+esc(m[3])+'</span>;'+(m[4]?'<span class="cm">'+esc(m[4])+'</span>':'');
+    }
+    if(line.trim().startsWith('/*')) return '<span class="cm">'+esc(line)+'</span>';
+    if((m=line.match(/^(@theme inline|:root|\})/))) return '<span class="cc">'+esc(line)+'</span>';
+    return esc(line);
+  }).join('\n');
+}
+
+/* ===================== 套用預覽 ===================== */
+function applyPreview(){
+  const root=document.getElementById('previewRoot');
+  ORDER.forEach(s=> root.style.setProperty('--'+s, oklchStr(resolveHex(s))));
+  root.style.setProperty('--radius', radiusRem());
+
+  // charts
+  const cd=document.getElementById('pvCharts');
+  const hs=[55,80,42,68,90];
+  cd.innerHTML=[1,2,3,4,5].map((n,i)=>`<div class="bar" style="height:${hs[i]}%;background:var(--chart-${n})"></div>`).join('');
+  // brand chips
+  const ch=document.getElementById('pvChips');
+  ch.innerHTML=COLORS.map(c=>`<div class="chip"><span class="sq" style="background:${brandHex(c)}"></span>${c.key}</div>`).join('');
+}
+
+/* ===================== 渲染對映 UI ===================== */
+function optionList(slot, meta){
+  let opts='';
+  if(meta && meta.fg) opts+=`<option value="__auto__">⚙ 自動對比(黑/白)</option>`;
+  if(meta && meta.red) opts+=`<option value="__red__">⚙ 通用紅 #DC2626</option>`;
+  const val=MAP[slot];
+  const inList = COLORS.some(c=>c.hex.toUpperCase()===String(val).toUpperCase());
+  if(val && val!=='__auto__' && val!=='__red__' && !inList){
+    opts+=`<option value="${val}">✎ 自訂 · ${val}</option>`;
+  }
+  COLORS.forEach(c=>{
+    opts+=`<option value="${c.hex}">${c.key} · ${c.hex}</option>`;
+  });
+  return opts;
+}
+function renderMapping(){
+  const wrap=document.getElementById('mapping');
+  let html='';
+  SLOTS.forEach(s=>{
+    if(s.group){ html+=`<div class="ctl-section"><p class="ctl-head">${s.group}</p></div>`; return; }
+    const val=MAP[s.v];
+    const hex=resolveHex(s.v);
+    const isSpecial = val==='__auto__'||val==='__red__';
+    html+=`<div class="map-row ${s.fg?'sub':''}" data-slot="${s.v}">
+      <span class="sw" style="background:${hex}"></span>
+      <div class="map-meta">
+        <div class="map-name ${s.fg?'fg':''}">--${s.v}</div>
+        ${s.hint?`<div class="map-hint">${s.hint}</div>`:''}
+      </div>
+      <select data-slot="${s.v}">${optionList(s.v,s)}</select>
+      <div class="map-ok">${oklchStr(hex)}${isSpecial?' · '+(val==='__auto__'?'auto':'default'):''}</div>
+    </div>`;
+  });
+  wrap.innerHTML=html;
+  // set select values
+  SLOTS.forEach(s=>{
+    if(s.group) return;
+    const sel=wrap.querySelector(`select[data-slot="${s.v}"]`);
+    if(sel) sel.value = MAP[s.v];
+  });
+  wrap.querySelectorAll('select').forEach(sel=>{
+    sel.addEventListener('change',e=>{
+      MAP[e.target.dataset.slot]=e.target.value;
+      renderMapping(); refresh();
+    });
+  });
+}
+
+/* ===================== 存檔 / 紀錄 ===================== */
+const LS_KEY='tokenbench.v1';
+let CURRENT_FILE='tokens.json';
+let SAVED=[];                 // 命名存檔(記憶體鏡像,與 localStorage 同步)
+const HAS_LS=(function(){ try{const k='__tb__';localStorage.setItem(k,'1');localStorage.removeItem(k);return true;}catch(e){return false;} })();
+
+function readStore(){ if(!HAS_LS) return {}; try{ return JSON.parse(localStorage.getItem(LS_KEY))||{}; }catch(e){ return {}; } }
+function writeStore(o){ if(!HAS_LS) return; try{ localStorage.setItem(LS_KEY, JSON.stringify(o)); }catch(e){} }
+function snapshot(){ return { fileName:CURRENT_FILE, colors:COLORS.map(c=>({path:c.path,key:c.key,hex:c.hex})), map:{...MAP}, radius:RADIUS, brandOverrides:{...BRAND_OVERRIDES} }; }
+function autosaveCurrent(){ if(!HAS_LS) return; const s=readStore(); s.current=snapshot(); writeStore(s); }
+
+function applySnapshot(snap){
+  if(!snap || !snap.colors || !snap.colors.length) return;
+  COLORS=snap.colors.map(c=>({...c, lum:luminance(c.hex), C:chroma(c.hex)}));
+  const def=autoMap();
+  MAP = (snap.map && Object.keys(snap.map).length) ? {...snap.map} : def;
+  for(const k in def){ if(!(k in MAP)) MAP[k]=def[k]; }   // 補齊缺漏槽位
+  RADIUS = (typeof snap.radius==='number') ? snap.radius : 10;
+  BRAND_OVERRIDES = snap.brandOverrides ? {...snap.brandOverrides} : {};
+  CURRENT_FILE = snap.fileName || 'tokens.json';
+  document.getElementById('radius').value=RADIUS;
+  document.getElementById('radiusVal').textContent=radiusRem();
+  showLoadedUI();
+  renderMapping(); refresh();
+}
+
+function saveNamed(name){
+  if(!COLORS.length){ toast('尚未上傳色票'); return; }
+  SAVED.unshift({ id:Date.now(), name:name||CURRENT_FILE, time:new Date().toISOString(), ...snapshot() });
+  if(SAVED.length>40) SAVED=SAVED.slice(0,40);
+  const s=readStore(); s.saved=SAVED; writeStore(s);
+  renderSaved(); toast('已存檔:'+(name||CURRENT_FILE));
+}
+function deleteNamed(id){
+  SAVED=SAVED.filter(x=>x.id!==id);
+  const s=readStore(); s.saved=SAVED; writeStore(s);
+  renderSaved();
+}
+function renderSaved(){
+  const list=document.getElementById('savedList');
+  if(!SAVED.length){ list.innerHTML='<div class="saved-empty">尚無存檔。設定好後按「儲存目前」,或匯入既有存檔。</div>'; return; }
+  list.innerHTML=SAVED.map(e=>{
+    const sw=(e.colors||[]).slice(0,7).map(c=>`<span style="background:${c.hex}"></span>`).join('');
+    const d=new Date(e.time); const ts=`${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    const nm=(e.name||'').replace(/</g,'&lt;');
+    return `<div class="saved-item">
+      <div class="sw-row">${sw}</div>
+      <div class="meta"><div class="nm">${nm}</div><div class="tm">${ts} · ${(e.colors||[]).length} 色</div></div>
+      <div class="act">
+        <button class="icn-btn" data-load="${e.id}">載入</button>
+        <button class="icn-btn del" data-del="${e.id}">刪</button>
+      </div>
+    </div>`;
+  }).join('');
+  list.querySelectorAll('[data-load]').forEach(b=>b.addEventListener('click',()=>{
+    const e=SAVED.find(x=>x.id===+b.dataset.load); if(e) applySnapshot(e);
+  }));
+  list.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>deleteNamed(+b.dataset.del)));
+}
+
+/* ===================== 主流程 ===================== */
+function showLoadedUI(){
+  document.getElementById('fileName').textContent=CURRENT_FILE;
+  document.getElementById('colorCount').textContent=COLORS.length;
+  document.getElementById('loaded').style.display='flex';
+  document.getElementById('controls').style.display='block';
+  document.getElementById('drop').style.display='none';
+  document.getElementById('previewEmpty').style.display='none';
+  document.getElementById('previewRoot').style.display='block';
+  document.getElementById('codeEmpty').style.display='none';
+  document.getElementById('codeWrap').style.display='block';
+  renderCal();
+}
+function refresh(){
+  if(!COLORS.length) return;
+  applyPreview();
+  CURRENT_CSS=buildCSS();
+  renderCodePane();
+  autosaveCurrent();
+}
+
+/* ===================== 可編輯的 globals.css 面板 ===================== */
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function codeLine(cls,inner){ return `<div class="cline ${cls}">${inner}</div>`; }
+function editRow(kind,key,name,hex){
+  return `<div class="cline edit ind">`+
+    `<input type="color" class="cswatch" value="${hex}" data-kind="${kind}" data-key="${key}" title="點擊改色">`+
+    `<span class="cv">${name}</span>: <span class="cval">${oklchStr(hex)}</span>; <span class="cm">/* ${hex} */</span>`+
+  `</div>`;
+}
+function renderCodePane(){
+  const ed=document.getElementById('codeEditor');
+  if(!COLORS.length){ ed.innerHTML=''; return; }
+  const R=[];
+  R.push(codeLine('cm','/* 品牌主題 — shadcn/ui (Tailwind v4, OKLCH) */'));
+  R.push(codeLine('cm','/* 由 Token Bench 自 Figma Variables 生成 · 僅含淺色模式 */'));
+  R.push(codeLine('cc',':root {'));
+  R.push(codeLine('ind','<span class="cv">--radius</span>: <span class="cp">'+radiusRem()+'</span>;'));
+  ORDER.forEach(s=>{ R.push(editRow('slot',s,'--'+s,resolveHex(s))); });
+  R.push(codeLine('ind cm','/* 品牌擴充 token */'));
+  COLORS.forEach(c=>{ R.push(editRow('brand',slug(c.path),'--brand-'+slug(c.path),brandHex(c))); });
+  R.push(codeLine('cc','}'));
+  const themeIdx=CURRENT_CSS.indexOf('@theme inline');
+  if(themeIdx>=0){
+    R.push(`<details class="theme-det"><summary>@theme inline 映射(自動生成,不需編輯)</summary><pre>${highlightCSS(CURRENT_CSS.slice(themeIdx))}</pre></details>`);
+  }
+  ed.innerHTML=R.join('');
+  ed.querySelectorAll('input.cswatch').forEach(inp=>{
+    // input:拖曳即時更新預覽與本行(不重建整個面板,避免關掉色票視窗)
+    inp.addEventListener('input',e=>{
+      const hex=e.target.value.toUpperCase();
+      const kind=e.target.dataset.kind, key=e.target.dataset.key;
+      if(kind==='slot') MAP[key]=hex; else BRAND_OVERRIDES[key]=hex;
+      const row=e.target.closest('.cline');
+      row.querySelector('.cval').textContent=oklchStr(hex);
+      row.querySelector('.cm').textContent='/* '+hex+' */';
+      applyPreview();
+      CURRENT_CSS=buildCSS();
+      autosaveCurrent();
+    });
+    // change:確定後同步左側下拉(顯示「自訂」)
+    inp.addEventListener('change',()=>{ renderMapping(); });
+  });
+}
+function loadColors(list, fname){
+  COLORS=list.map(c=>({...c, lum:luminance(c.hex), C:chroma(c.hex)}));
+  MAP=autoMap();
+  BRAND_OVERRIDES={};
+  CURRENT_FILE=fname;
+  showLoadedUI();
+  renderMapping(); refresh();
+}
+function clearAll(){
+  COLORS=[]; MAP={};
+  document.getElementById('loaded').style.display='none';
+  document.getElementById('controls').style.display='none';
+  document.getElementById('drop').style.display='block';
+  document.getElementById('previewEmpty').style.display='flex';
+  document.getElementById('previewRoot').style.display='none';
+  document.getElementById('codeEmpty').style.display='flex';
+  document.getElementById('codeWrap').style.display='none';
+  const s=readStore(); s.current=null; writeStore(s);   // 清除自動還原
+}
+function parseAndLoad(text, fname){
+  let data;
+  try{ data=JSON.parse(text); }
+  catch(e){ toast('JSON 解析失敗,請確認檔案格式'); return; }
+  const list=flatten(data,'',[]);
+  if(!list.length){ toast('找不到任何 color token'); return; }
+  loadColors(list, fname);
+}
+
+/* ===================== 事件綁定 ===================== */
+const drop=document.getElementById('drop');
+drop.addEventListener('click',()=>{
+  const inp=document.createElement('input');
+  inp.type='file'; inp.accept='.json,application/json';
+  inp.onchange=()=>{ const f=inp.files[0]; if(f){ const r=new FileReader(); r.onload=()=>parseAndLoad(r.result,f.name); r.readAsText(f); } };
+  inp.click();
+});
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',e=>{
+  const f=e.dataTransfer.files[0];
+  if(f){ const r=new FileReader(); r.onload=()=>parseAndLoad(r.result,f.name); r.readAsText(f); }
+});
+document.getElementById('clearFile').addEventListener('click',clearAll);
+document.getElementById('resetBtn').addEventListener('click',()=>{ if(COLORS.length){ MAP=autoMap(); BRAND_OVERRIDES={}; renderMapping(); refresh(); toast('已重設為自動對映'); }});
+
+document.getElementById('radius').addEventListener('input',e=>{
+  RADIUS=+e.target.value;
+  document.getElementById('radiusVal').textContent=radiusRem();
+  refresh();
+});
+
+// tabs
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('pane-preview').classList.toggle('hidden', t.dataset.pane!=='preview');
+    document.getElementById('pane-code').classList.toggle('hidden', t.dataset.pane!=='code');
+  });
+});
+
+// preview interactions (delegated)
+document.getElementById('previewRoot').addEventListener('click',function(e){
+  const sw=e.target.closest('.swtch');
+  if(sw){ sw.classList.toggle('on'); sw.classList.toggle('off'); return; }
+  const tab=e.target.closest('.pv-tab');
+  if(tab){
+    const box=tab.closest('[data-tabs]'); const card=tab.closest('.pv-card');
+    box.querySelectorAll('.pv-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const idx=tab.dataset.tab;
+    card.querySelectorAll('[data-panel]').forEach(p=>{ p.hidden = p.dataset.panel!==idx; });
+    return;
+  }
+  const cell=e.target.closest('.cal-cell:not(.dim)');
+  if(cell){ const g=cell.parentElement; g.querySelectorAll('.cal-cell').forEach(c=>c.classList.remove('sel')); cell.classList.add('sel'); }
+});
+function renderCal(){
+  const g=document.getElementById('pvCal'); if(!g) return;
+  let h=''; const lead=2, days=30, sel=18;
+  for(let i=lead;i>0;i--) h+=`<span class="cal-cell dim">${29-i+1}</span>`;
+  for(let d=1;d<=days;d++) h+=`<span class="cal-cell${d===sel?' sel':''}">${d}</span>`;
+  const total=lead+days, trail=(7-(total%7))%7;
+  for(let d=1;d<=trail;d++) h+=`<span class="cal-cell dim">${d}</span>`;
+  g.innerHTML=h;
+}
+
+// copy / download
+function currentCSS(){ return CURRENT_CSS||''; }
+const IN_FRAME=(function(){ try{ return window.self!==window.top; }catch(e){ return true; } })();
+
+function copyText(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((res,rej)=>{
+    try{
+      const ta=document.createElement('textarea');
+      ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.focus(); ta.select();
+      const ok=document.execCommand('copy'); document.body.removeChild(ta);
+      ok?res():rej();
+    }catch(e){ rej(e); }
+  });
+}
+function downloadBlob(text, filename, mime){
+  try{
+    const blob=new Blob([text],{type:mime});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=filename; a.rel='noopener';
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1500); // 延後 revoke,避免下載被取消
+    return true;
+  }catch(e){ return false; }
+}
+
+document.getElementById('copyBtn').addEventListener('click',()=>{
+  if(!COLORS.length){ toast('尚未上傳色票'); return; }
+  copyText(currentCSS()).then(()=>toast('已複製 globals.css')).catch(()=>{ openTextModal(currentCSS()); toast('請手動全選複製'); });
+});
+document.getElementById('dlBtn').addEventListener('click',()=>{
+  if(!COLORS.length){ toast('尚未上傳色票'); return; }
+  const ok=downloadBlob(currentCSS(),'globals.css','text/css');
+  if(IN_FRAME){
+    // 預覽視窗(iframe)常擋下載 → 直接給可複製的純文字後路
+    openTextModal(currentCSS());
+  } else if(ok){
+    toast('已開始下載 globals.css');
+  } else {
+    openTextModal(currentCSS());
+  }
+});
+document.getElementById('txtBtn').addEventListener('click',()=>{
+  if(!COLORS.length){ toast('尚未上傳色票'); return; }
+  openTextModal(currentCSS());
+});
+
+/* 純文字後路:任何沙箱都能全選複製 */
+function openTextModal(css){
+  let ov=document.getElementById('txtOverlay');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='txtOverlay'; ov.className='ov';
+    ov.innerHTML=`<div class="ov-box">
+      <div class="ov-head"><b>globals.css</b>
+        <span class="ov-hint">下載被環境擋住時,可在此全選複製,貼進你的 globals.css</span>
+        <span class="ov-x" id="ovClose">✕</span></div>
+      <textarea id="ovText" readonly spellcheck="false"></textarea>
+      <div class="ov-foot">
+        <button class="mini-btn" id="ovCopy">全選並複製</button>
+        <button class="mini-btn sec" id="ovDl">再試一次下載</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.addEventListener('click',e=>{ if(e.target===ov) ov.style.display='none'; });
+    document.getElementById('ovClose').addEventListener('click',()=>ov.style.display='none');
+    document.getElementById('ovCopy').addEventListener('click',()=>{
+      const t=document.getElementById('ovText'); t.focus(); t.select();
+      copyText(t.value).then(()=>toast('已複製')).catch(()=>{ try{document.execCommand('copy');toast('已複製');}catch(_){toast('請按 Ctrl/Cmd+C');} });
+    });
+    document.getElementById('ovDl').addEventListener('click',()=>downloadBlob(currentCSS(),'globals.css','text/css'));
+  }
+  document.getElementById('ovText').value=css;
+  ov.style.display='flex';
+}
+
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+/* ===================== 存檔記錄:按鈕綁定 ===================== */
+document.getElementById('saveNow').addEventListener('click',()=>{
+  if(!COLORS.length){ toast('尚未上傳色票'); return; }
+  const def=CURRENT_FILE.replace(/\.json.*$/,'')+' · '+new Date().toLocaleDateString();
+  askName(def, name=>saveNamed((name||def).trim()||def));
+});
+
+/* 頁面內命名視窗(取代原生 prompt,沙箱也可用) */
+function askName(def, cb){
+  let ov=document.getElementById('nameOverlay');
+  if(!ov){
+    ov=document.createElement('div'); ov.id='nameOverlay'; ov.className='ov';
+    ov.innerHTML=`<div class="ov-box" style="width:min(420px,100%)">
+      <div class="ov-head"><b>為存檔命名</b><span class="ov-hint" style="flex:1"></span><span class="ov-x" id="nmClose">✕</span></div>
+      <div style="padding:18px 16px;">
+        <input id="nmInput" class="nm-input" type="text" spellcheck="false">
+        <div style="display:flex; gap:8px; margin-top:14px;">
+          <button class="mini-btn" id="nmOk">儲存</button>
+          <button class="mini-btn sec" id="nmCancel">取消</button>
+        </div>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    const close=()=>{ ov.style.display='none'; };
+    const submit=()=>{ const v=document.getElementById('nmInput').value; close(); if(typeof ov._cb==='function') ov._cb(v); };
+    document.getElementById('nmClose').addEventListener('click',close);
+    document.getElementById('nmCancel').addEventListener('click',close);
+    document.getElementById('nmOk').addEventListener('click',submit);
+    document.getElementById('nmInput').addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();submit();} if(e.key==='Escape')close(); });
+    ov.addEventListener('click',e=>{ if(e.target===ov) close(); });
+  }
+  ov._cb=cb;
+  const inp=document.getElementById('nmInput');
+  inp.value=def||'';
+  ov.style.display='flex';
+  setTimeout(()=>{ inp.focus(); inp.select(); },40);
+}
+document.getElementById('exportStore').addEventListener('click',()=>{
+  const payload={ app:'tokenbench', version:1, exportedAt:new Date().toISOString(),
+    saved:SAVED, current:COLORS.length?snapshot():null };
+  downloadBlob(JSON.stringify(payload,null,2),'tokenbench-backup.json','application/json');
+  if(IN_FRAME) toast('預覽視窗可能擋下載,可改用下載到本機後再開啟');
+  else toast('已匯出存檔');
+});
+function mergeBackup(data){
+  let merged=0;
+  if(Array.isArray(data.saved)){
+    const ids=new Set(SAVED.map(x=>x.id));
+    data.saved.forEach(e=>{ if(!ids.has(e.id)){ SAVED.push(e); merged++; } });
+    SAVED.sort((a,b)=>b.id-a.id);
+    const s=readStore(); s.saved=SAVED; writeStore(s); renderSaved();
+  }
+  if(data.current && data.current.colors && data.current.colors.length) applySnapshot(data.current);
+  return merged;
+}
+document.getElementById('importStore').addEventListener('click',()=>{
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='.json,application/json';
+  inp.onchange=()=>{ const f=inp.files[0]; if(!f) return;
+    const r=new FileReader();
+    r.onload=()=>{
+      try{ const n=mergeBackup(JSON.parse(r.result)); toast('已匯入存檔'+(n?`(新增 ${n} 筆)`:'')); }
+      catch(e){ toast('存檔檔案格式錯誤'); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+});
+
+/* ===================== 雲端同步:從網址載入 ===================== */
+function setSyncStatus(msg, cls){
+  const el=document.getElementById('syncStatus');
+  el.textContent=msg; el.className='sync-status'+(cls?' '+cls:'');
+}
+function persistSync(){
+  const s=readStore();
+  s.syncUrl=document.getElementById('syncUrl').value.trim();
+  s.syncAuto=document.getElementById('syncAuto').checked;
+  writeStore(s);
+}
+async function fetchRemoteBackup(url, silent){
+  if(!url){ if(!silent) setSyncStatus('請先填入網址','err'); return; }
+  setSyncStatus('同步中…','');
+  try{
+    const res=await fetch(url,{cache:'no-store'});
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const data=await res.json();
+    const n=mergeBackup(data);
+    const t=new Date().toLocaleTimeString();
+    setSyncStatus(`已同步 · 新增 ${n} 筆 · ${t}`,'ok');
+    if(!silent) toast('已從網址同步');
+  }catch(err){
+    setSyncStatus('同步失敗:'+err.message+'(可能是 CORS 或網址錯誤)','err');
+    if(!silent) toast('同步失敗,改用「匯入存檔」讀檔案');
+  }
+}
+document.getElementById('syncPull').addEventListener('click',()=>{
+  persistSync(); fetchRemoteBackup(document.getElementById('syncUrl').value.trim(), false);
+});
+document.getElementById('syncUrl').addEventListener('change', persistSync);
+document.getElementById('syncAuto').addEventListener('change', persistSync);
+
+/* ===================== GitHub repo 聯動 ===================== */
+function ghFields(){
+  return {
+    owner:document.getElementById('ghOwner').value.trim(),
+    repo:document.getElementById('ghRepo').value.trim(),
+    path:document.getElementById('ghPath').value.trim()||'tokenbench-backup.json',
+    cssPath:document.getElementById('ghCssPath').value.trim()||'globals.css',
+    branch:document.getElementById('ghBranch').value.trim()||'main',
+    token:document.getElementById('ghToken').value.trim(),
+    remember:document.getElementById('ghRemember').checked
+  };
+}
+function persistGh(){
+  const g=ghFields(); const s=readStore();
+  s.gh={ owner:g.owner, repo:g.repo, path:g.path, cssPath:g.cssPath, branch:g.branch, remember:g.remember,
+         token: g.remember ? g.token : '' };   // 不記住時不寫入 token
+  writeStore(s);
+}
+function ghStatus(msg,cls){ const el=document.getElementById('ghStatus'); el.textContent=msg; el.className='sync-status'+(cls?' '+cls:''); }
+function b64encodeUtf8(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64decodeUtf8(b64){ return decodeURIComponent(escape(atob(b64.replace(/\n/g,'')))); }
+function ghHeaders(token){
+  const h={'Accept':'application/vnd.github+json'};
+  if(token) h['Authorization']='Bearer '+token;   // 走 header,絕不放進網址
+  return h;
+}
+function ghContentsUrl(g, path){
+  return `https://api.github.com/repos/${encodeURIComponent(g.owner)}/${encodeURIComponent(g.repo)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
+}
+async function ghGetFile(g, path){
+  const res=await fetch(ghContentsUrl(g,path)+`?ref=${encodeURIComponent(g.branch)}`,{headers:ghHeaders(g.token),cache:'no-store'});
+  if(res.status===404) return {missing:true};
+  if(!res.ok) throw new Error('HTTP '+res.status+(res.status===401?' 認證失敗':res.status===403?' 權限/限流':''));
+  return await res.json();
+}
+async function ghPushFile(g, path, text, message){
+  let sha;
+  const existing=await ghGetFile(g, path);
+  if(!existing.missing) sha=existing.sha;
+  const body={ message, content:b64encodeUtf8(text), branch:g.branch };
+  if(sha) body.sha=sha;
+  const res=await fetch(ghContentsUrl(g,path),{method:'PUT',headers:{...ghHeaders(g.token),'Content-Type':'application/json'},body:JSON.stringify(body)});
+  if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error('HTTP '+res.status+(e.message?' · '+e.message:'')); }
+  return await res.json();
+}
+async function ghPull(){
+  const g=ghFields(); persistGh();
+  if(!g.owner||!g.repo){ ghStatus('請填 owner 與 repo','err'); return; }
+  ghStatus('讀取紀錄中…','');
+  try{
+    const file=await ghGetFile(g, g.path);
+    if(file.missing){ ghStatus('repo 中找不到 '+g.path,'err'); return; }
+    const data=JSON.parse(b64decodeUtf8(file.content));
+    const n=mergeBackup(data);
+    ghStatus(`已從 repo 載入紀錄 · 新增 ${n} 筆`,'ok'); toast('已從 GitHub 載入紀錄');
+  }catch(err){ ghStatus('載入失敗:'+err.message,'err'); }
+}
+async function ghPush(){
+  const g=ghFields(); persistGh();
+  if(!g.owner||!g.repo){ ghStatus('請填 owner 與 repo','err'); return; }
+  if(!g.token){ ghStatus('推送需要 token','err'); return; }
+  ghStatus('推送紀錄中…','');
+  try{
+    const payload={ app:'tokenbench', version:1, exportedAt:new Date().toISOString(),
+      saved:SAVED, current:COLORS.length?snapshot():null };
+    await ghPushFile(g, g.path, JSON.stringify(payload,null,2), 'chore: update token bench records ('+new Date().toISOString()+')');
+    ghStatus('已推送紀錄到 repo ✓','ok'); toast('已推送紀錄');
+  }catch(err){ ghStatus('推送失敗:'+err.message,'err'); }
+}
+async function ghPushCss(){
+  const g=ghFields(); persistGh();
+  if(!g.owner||!g.repo){ ghStatus('請填 owner 與 repo','err'); return; }
+  if(!g.token){ ghStatus('推送需要 token','err'); return; }
+  if(!COLORS.length){ ghStatus('尚未上傳色票,沒有 CSS 可推','err'); return; }
+  ghStatus('推送 globals.css 中…','');
+  try{
+    await ghPushFile(g, g.cssPath, currentCSS(), 'feat: update '+g.cssPath+' from Token Bench ('+new Date().toISOString()+')');
+    ghStatus('已推送 '+g.cssPath+' 到 repo ✓','ok'); toast('已推送 globals.css');
+  }catch(err){ ghStatus('推送失敗:'+err.message,'err'); }
+}
+document.getElementById('ghPull').addEventListener('click',ghPull);
+document.getElementById('ghPush').addEventListener('click',ghPush);
+document.getElementById('ghPushCss').addEventListener('click',ghPushCss);
+['ghOwner','ghRepo','ghPath','ghCssPath','ghBranch','ghRemember'].forEach(id=>document.getElementById(id).addEventListener('change',persistGh));
+document.getElementById('ghRemember').addEventListener('change',persistGh);
+
+/* ===================== 內建範例(你的色票 + 綠)===================== */
+const SAMPLE={
+ "NeutralColor":{"$type":"color","$value":{"hex":"#F2F8FC"}},
+ "PrimaryColor":{
+   "Primary_DeepBlue_normal":{"$type":"color","$value":{"hex":"#1469D4"}},
+   "Primary_DeepBlue_light":{"$type":"color","$value":{"hex":"#BCE6FF"}},
+   "Primary_DeepBlue_dark":{"$type":"color","$value":{"hex":"#142F57"}},
+   "Primary_SkyBlue_normal":{"$type":"color","$value":{"hex":"#2DB6F3"}},
+   "Primary_SkyBlue_light":{"$type":"color","$value":{"hex":"#EEF9FF"}},
+   "Primary_SkyBlue_dark":{"$type":"color","$value":{"hex":"#194D8F"}}
+ },
+ "AcentColor":{
+   "AcentColor-yellow":{"$type":"color","$value":{"hex":"#E0AF35"}},
+   "AcentColor-pink":{"$type":"color","$value":{"hex":"#E39290"}},
+   "AcentColor-green":{"$type":"color","$value":{"hex":"#28AAA2"}}
+ },
+ "Grayscale":{
+   "Black-900":{"$type":"color","$value":{"hex":"#1A1A1A"}},
+   "Black-700":{"$type":"color","$value":{"hex":"#404040"}},
+   "Black-500":{"$type":"color","$value":{"hex":"#767676"}},
+   "Black-300":{"$type":"color","$value":{"hex":"#D6D6D6"}},
+   "Black-100":{"$type":"color","$value":{"hex":"#F5F5F5"}},
+   "white":{"$type":"color","$value":{"hex":"#FFFFFF"}}
+ }
+};
+document.getElementById('loadSample').addEventListener('click',e=>{
+  e.stopPropagation();
+  parseAndLoad(JSON.stringify(SAMPLE),'Mode 1.tokens.json(範例)');
+});
+
+/* ===================== 初始化:還原存檔 ===================== */
+(function init(){
+  if(!HAS_LS){
+    const n=document.getElementById('storeNotice');
+    n.style.display='block';
+    n.textContent='此環境無法自動存檔(瀏覽器儲存被停用)。請用「匯出存檔」把紀錄存成檔案保留。';
+  }
+  const store=readStore();
+  SAVED = Array.isArray(store.saved) ? store.saved : [];
+  renderSaved();
+  // 還原雲端同步設定
+  if(store.syncUrl) document.getElementById('syncUrl').value=store.syncUrl;
+  document.getElementById('syncAuto').checked=!!store.syncAuto;
+  if(store.gh){
+    const g=store.gh;
+    if(g.owner) document.getElementById('ghOwner').value=g.owner;
+    if(g.repo) document.getElementById('ghRepo').value=g.repo;
+    if(g.path) document.getElementById('ghPath').value=g.path;
+    if(g.cssPath) document.getElementById('ghCssPath').value=g.cssPath;
+    if(g.branch) document.getElementById('ghBranch').value=g.branch;
+    document.getElementById('ghRemember').checked=!!g.remember;
+    if(g.remember && g.token) document.getElementById('ghToken').value=g.token;
+  }
+  if(store.current && store.current.colors && store.current.colors.length){
+    applySnapshot(store.current);   // 自動還原上次工作階段
+  }
+  if(store.syncAuto && store.syncUrl){
+    fetchRemoteBackup(store.syncUrl, true);   // 開啟時自動拉取
+  }
+})();
+</script>
+</body>
+</html>
