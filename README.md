@@ -95,14 +95,19 @@ https://raw.githubusercontent.com/lintingyii/Pathors_ColorToken/refs/heads/main/
   - **⤴ 推送 globals.css 到 repo** — 把目前的 CSS 直接 commit 回 repo,工程端即可 pull 最新
 - 也可用「**從網址載入**」貼上任何 raw JSON 連結同步紀錄。
 
-```
-owner: lintingyii,
-repo: Pathors_ColorToken,
-分支: main
-紀錄路徑保留: tokenbench-backup.json,CSS
-路徑保留: globals.css
-⚠️ Please ask for token
-```
+
+**owner:** `lintingyii`
+
+**repo:** `Pathors_ColorToken`
+
+**分支:** `main`
+
+**紀錄路徑保留:** `tokenbench-backup.json`
+
+**CSS 路徑保留:** `globals.css`
+
+**⚠️ Please ask for token**
+
 
 ### Token 注意事項
 
