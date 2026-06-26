@@ -1,0 +1,154 @@
+{
+  "app": "tokenbench",
+  "version": 1,
+  "exportedAt": "2026-06-26T04:12:41.779Z",
+  "saved": [],
+  "current": {
+    "fileName": "Mode 1.tokens.json",
+    "colors": [
+      {
+        "path": "PrimaryColor/Primary_DeepBlue_normal",
+        "key": "Primary_DeepBlue_normal",
+        "hex": "#1469D4"
+      },
+      {
+        "path": "PrimaryColor/Primary_DeepBlue_light",
+        "key": "Primary_DeepBlue_light",
+        "hex": "#BCE6FF"
+      },
+      {
+        "path": "PrimaryColor/Primary_DeepBlue_dark",
+        "key": "Primary_DeepBlue_dark",
+        "hex": "#142F57"
+      },
+      {
+        "path": "PrimaryColor/Primary_SkyBlue_dark",
+        "key": "Primary_SkyBlue_dark",
+        "hex": "#194D8F"
+      },
+      {
+        "path": "PrimaryColor/Primary_SkyBlue_normal",
+        "key": "Primary_SkyBlue_normal",
+        "hex": "#2DB6F3"
+      },
+      {
+        "path": "PrimaryColor/Primary_SkyBlue_light",
+        "key": "Primary_SkyBlue_light",
+        "hex": "#EEF9FF"
+      },
+      {
+        "path": "AcentColor/AcentColor-yellow",
+        "key": "AcentColor-yellow",
+        "hex": "#E0AF35"
+      },
+      {
+        "path": "AcentColor/AcentColor-pink",
+        "key": "AcentColor-pink",
+        "hex": "#E39290"
+      },
+      {
+        "path": "AcentColor/AcentColor-green",
+        "key": "AcentColor-green",
+        "hex": "#28AAA2"
+      },
+      {
+        "path": "Grayscale/Black-900",
+        "key": "Black-900",
+        "hex": "#1A1A1A"
+      },
+      {
+        "path": "Grayscale/Black-800",
+        "key": "Black-800",
+        "hex": "#272727"
+      },
+      {
+        "path": "Grayscale/Black-700",
+        "key": "Black-700",
+        "hex": "#404040"
+      },
+      {
+        "path": "Grayscale/Black-600",
+        "key": "Black-600",
+        "hex": "#535353"
+      },
+      {
+        "path": "Grayscale/Black-500",
+        "key": "Black-500",
+        "hex": "#727272"
+      },
+      {
+        "path": "Grayscale/Black-400",
+        "key": "Black-400",
+        "hex": "#A3A3A3"
+      },
+      {
+        "path": "Grayscale/Black-300",
+        "key": "Black-300",
+        "hex": "#D3D3D3"
+      },
+      {
+        "path": "Grayscale/Black-200",
+        "key": "Black-200",
+        "hex": "#E6E6E6"
+      },
+      {
+        "path": "Grayscale/Black-100",
+        "key": "Black-100",
+        "hex": "#F5F5F5"
+      },
+      {
+        "path": "Grayscale/Black-50",
+        "key": "Black-50",
+        "hex": "#FAFAFA"
+      },
+      {
+        "path": "Grayscale/white",
+        "key": "white",
+        "hex": "#FFFFFF"
+      },
+      {
+        "path": "StatusColor/Status_Fail",
+        "key": "Status_Fail",
+        "hex": "#E5484D"
+      },
+      {
+        "path": "StatusColor/Status_Warnning",
+        "key": "Status_Warnning",
+        "hex": "#F3AA45"
+      },
+      {
+        "path": "StatusColor/Status_Success",
+        "key": "Status_Success",
+        "hex": "#22D788"
+      }
+    ],
+    "map": {
+      "background": "#FFFFFF",
+      "card": "#FAFAFA",
+      "popover": "#FFFFFF",
+      "primary": "#1469D4",
+      "secondary": "#2DB6F3",
+      "accent": "#EEF9FF",
+      "muted": "#F5F5F5",
+      "muted-foreground": "#727272",
+      "destructive": "__red__",
+      "border": "#E6E6E6",
+      "input": "#F5F5F5",
+      "ring": "#1469D4",
+      "foreground": "__auto__",
+      "card-foreground": "__auto__",
+      "popover-foreground": "__auto__",
+      "primary-foreground": "__auto__",
+      "secondary-foreground": "__auto__",
+      "accent-foreground": "__auto__",
+      "destructive-foreground": "__auto__",
+      "chart-1": "#1469D4",
+      "chart-2": "#2DB6F3",
+      "chart-3": "#E0AF35",
+      "chart-4": "#E39290",
+      "chart-5": "#142F57"
+    },
+    "radius": 16,
+    "brandOverrides": {}
+  }
+}
