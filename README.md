@@ -95,18 +95,20 @@ https://raw.githubusercontent.com/lintingyii/Pathors_ColorToken/refs/heads/main/
   - **⤴ 推送 globals.css 到 repo** — 把目前的 CSS 直接 commit 回 repo,工程端即可 pull 最新
 - 也可用「**從網址載入**」貼上任何 raw JSON 連結同步紀錄。
 
+```
+owner: lintingyii,
+repo: Pathors_ColorToken,
+分支: main
+紀錄路徑保留: tokenbench-backup.json,CSS
+路徑保留: globals.css
+⚠️ Please ask for token
+```
+
 ### Token 注意事項
 
 - 推送(寫入)需要 GitHub **fine-grained personal access token**,權限請限定**只有這個 repo**、`Contents` 設為 **Read and write**:https://github.com/settings/tokens?type=beta
 - token **不會寫進這個 HTML 檔**,只存在你本機瀏覽器;共用 / 公用電腦請勿勾「記住 token」。
 - token 全程走 `Authorization` header,絕不放進網址。
-
-### ⚠ 必須以 http(s) 開啟
-
-直接用 `file://` 雙擊開啟時,瀏覽器會擋掉對 GitHub 的請求(出現 `Failed to fetch`)。請改用:
-
-- 本工具的 **GitHub Pages 網址**(最方便),或
-- 本機伺服器:在檔案所在資料夾執行 `python3 -m http.server 8000`,再開 `http://localhost:8000/`。
 
 ---
 
