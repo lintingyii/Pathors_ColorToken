@@ -2,25 +2,25 @@
 /* 由 Token Bench 自 Figma Variables 生成 · 僅含淺色模式 */
 
 :root {
-  --radius: 0.625rem;
+  --radius: 1rem;
   --background: oklch(1.000 0 0); /* #FFFFFF */
   --foreground: oklch(0.218 0 0); /* #1A1A1A */
-  --card: oklch(1.000 0 0); /* #FFFFFF */
+  --card: oklch(0.985 0 0); /* #FAFAFA */
   --card-foreground: oklch(0.218 0 0); /* #1A1A1A */
   --popover: oklch(1.000 0 0); /* #FFFFFF */
   --popover-foreground: oklch(0.218 0 0); /* #1A1A1A */
   --primary: oklch(0.537 0.182 257.5); /* #1469D4 */
   --primary-foreground: oklch(1.000 0 0); /* #FFFFFF */
-  --secondary: oklch(0.903 0.056 234.3); /* #BCE6FF */
-  --secondary-foreground: oklch(0.218 0 0); /* #1A1A1A */
-  --muted: oklch(1.000 0 0); /* #FFFFFF */
+  --secondary: oklch(0.733 0.141 233.7); /* #2DB6F3 */
+  --secondary-foreground: oklch(1.000 0 0); /* #FFFFFF */
+  --muted: oklch(0.970 0 0); /* #F5F5F5 */
   --muted-foreground: oklch(0.552 0 0); /* #727272 */
   --accent: oklch(0.903 0.056 234.3); /* #BCE6FF */
   --accent-foreground: oklch(0.218 0 0); /* #1A1A1A */
   --destructive: oklch(0.577 0.215 27.3); /* #DC2626 */
   --destructive-foreground: oklch(1.000 0 0); /* #FFFFFF */
-  --border: oklch(0.867 0 0); /* #D3D3D3 */
-  --input: oklch(0.867 0 0); /* #D3D3D3 */
+  --border: oklch(0.925 0 0); /* #E6E6E6 */
+  --input: oklch(0.970 0 0); /* #F5F5F5 */
   --ring: oklch(0.537 0.182 257.5); /* #1469D4 */
   --chart-1: oklch(0.537 0.182 257.5); /* #1469D4 */
   --chart-2: oklch(0.733 0.141 233.7); /* #2DB6F3 */
